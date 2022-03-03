@@ -1,0 +1,107 @@
+---
+title: "Good vs Bad Visualizations"
+author: "Nii Amoo"
+date: "3/1/2022"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+Sys.setenv(TZ = 'GMT')
+library(tidyverse)
+library(plotly)
+
+
+netflix <- read_csv("Data/netflix_titles.csv/netflix_titles.csv")
+# head(netflix)
+
+
+# A pie chart of ratings 
+pie_data <- netflix %>% filter(type == 'Movie') %>% group_by(rating) %>% 
+    summarize(count = n())
+
+
+pie <- plot_ly(pie_data, labels = ~rating, values = ~count, type = 'pie')
+pie <- pie %>% layout(title = 'Top Netflix Movie ratings',
+                      xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                      yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+
+
+# A bar chart of ratings
+Movie_bar_data <- netflix %>% filter(type == 'Movie') %>% group_by(rating) %>% 
+    summarize(count = n()) %>% arrange(desc(count)) %>% slice_head(n = 5)
+
+bar <- Movie_bar_data %>% 
+    ggplot(aes(x = reorder(rating, -count, sum), y = count)) + 
+    geom_col(fill = c('#34495E','#D6DBDF','#D6DBDF','#D6DBDF','#D6DBDF')) +
+    xlab('Ratings') + ylab('Frequency') + 
+    ggtitle('Top 5 Movie Ratings on Netflix') +
+    theme_minimal()
+```
+
+## Why visualize data?
+ Good visualizations can give:
+ 
+    * Powerful summaries of the underlying data 
+    
+    * Communicate insights often to audiences who do not have the same
+        luxury of spending so much time with the data as you do. 
+ 
+ As a Data analyst/ Scientist, it's your responsibility to give the necessary 
+ **high level summaries or takeaways** in any data visual you create.
+
+## Some Features of Good Visualizations
+    
+    * Clear on what it's communicating
+    
+    * Well defined axis, scaling and labels
+    
+    * Good choice of colors and anotations (visually appealing)
+    
+    * Less is more
+    
+    
+## Some Features of Bad Visualizations
+    
+    * Cluttered,too much going on in the chart with no clear communication goal
+    
+    * Truncating axes to start at non-zero values which distorts interpretation
+    
+    * Poor choice of colors
+    
+    * Unnecessary 3D-fying 
+
+
+## An Example of a Bad Visualization
+#### What's wrong with this plot?
+
+```{r}
+pie
+```
+
+
+## What's wrong with that plot? 
+
+ The visualization is bad because:
+ 
+    * It's vague, putting together all movie ratings does help the
+        audience identify what you're trying to communicate.
+        
+    * The rating categories are too many. Remember, good visuals give high 
+        level summaries (less is more)
+        
+    * The pie chart used here is not the best tool for comparing multiple 
+        categories. 
+        
+    * Pie charts also make it difficult for your audience to judge the relative 
+        sizes of the slices.
+        
+    Let's make this visualization better.
+        
+## An Example of a Good Visualization
+```{r}
+bar
+```
+
