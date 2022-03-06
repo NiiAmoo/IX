@@ -1,0 +1,205 @@
+---
+title: "Good and Bad Data Visualizations"
+author: "Nii Amoo"
+date: "`r Sys.Date()`"
+output:
+  prettydoc::html_pretty:
+    theme: leonids
+
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE,fig.width = 12, fig.height = 7)
+Sys.setenv(TZ = 'GMT')
+```
+
+
+## Why visualize data?
+ Good visualizations can give:
+ 
+ * Powerful summaries of the underlying data 
+ 
+ * Communicate insights often to audiences who do not have the same
+        luxury of spending so much time with the data as you do. 
+ 
+ As a Data analyst/ Scientist, it's your responsibility to give the necessary 
+ **high level summaries or takeaways** in any data visual you create.
+ 
+
+## Some Features of Good Visualizations
+    
+  * Clear on what they're communicating
+    
+  * Well defined axis, with the right scaling and labels
+    
+  * Good choice of colors and anotations (visually appealing)
+    
+  * Less is more
+    
+
+## Some Features of Bad Visualizations
+    
+  * Cluttered, too much going on in the chart with no clear communication goal
+  
+  * Truncating axes to start at non-zero values which distorts interpretation
+  
+  * Poor choice of colors
+  
+  * Unnecessary 3D-fying 
+    
+## Our data for today - Netflix Movies & TV Shows
+```{r,message=FALSE,warning=FALSE}
+library(tidyverse) # meta-package for data analysis in R
+library(plotly) # creating interactive visualizations
+library(DT) # nice table formatting
+
+
+netflix <- read_csv("Data/netflix_titles.csv/netflix_titles.csv")
+# head(netflix,5) %>% kbl() %>%
+#   kable_styling()
+
+# Get a high-level summary of the data
+summary(netflix)
+
+# For a more detailed summary of the data
+skimr::skim(netflix)
+
+```
+
+
+## Some Bad Visualizations
+### Example 1
+
+```{r}
+# A pie chart of ratings 
+pie_data <-  netflix %>% 
+             filter(type == 'Movie') %>% 
+             group_by(rating) %>%
+             summarize(count = n())
+
+pie_data %>% datatable()
+
+
+## There's no simple function to create a bar chart in R using ggplot for a reason.
+# pie_data %>% 
+#     ggplot(aes(x = "", y = count, fill = rating)) +
+#     geom_bar(stat = "identity", width = 1) +
+#     coord_polar("y", start = 0) +
+#     theme_void()
+
+
+pie <- plot_ly(pie_data, labels = ~rating, values = ~count, type = 'pie')
+
+
+pie <- pie %>% 
+       layout(title = 'Top Netflix Movie ratings',width = 700, height = 500,
+             xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+             yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+pie
+```
+
+## What's wrong with that plot? 
+
+ The visualization is bad because:    
+
+  * It's vague, putting together all movie ratings does help the audience identify 
+    what you're trying to communicate.
+    
+  * The rating categories are too many. Remember, good visuals give high level summaries (less is more)
+    
+  * The pie chart used here is not the best tool for comparing multiple categories. 
+    
+  * Pie charts also make it difficult for your audience to judge the relative sizes of the slices.
+        
+    Let's look at another.
+    
+
+### Example 2
+```{r,message=FALSE}
+# Movie Ratings over time
+rating_data <- netflix %>% 
+  select(type, release_year, rating) %>%
+  group_by(release_year, rating, type) %>% 
+  summarise(frequency = n())
+
+
+# Initial line plot
+rating_plot_1 <- rating_data %>%
+    ggplot(aes(x = release_year,y = frequency,group = rating, color = rating)) +
+    geom_line(size = 1.5)
+
+rating_plot_1 %>% ggplotly(width = 800, height = 500)
+```
+
+        
+## Examples of Good Visualizations
+### Example 1 
+```{r}
+# A bar chart of ratings
+Movie_bar_data <- netflix %>% filter(type == 'Movie') %>% group_by(rating) %>%
+    summarize(count = n()) %>% arrange(desc(count)) %>% slice_head(n = 5)
+
+bar <- Movie_bar_data %>%
+    ggplot(aes(x = reorder(rating, -count, sum), y = count)) +
+    geom_col(fill = c('#f9007a','#D6DBDF','#D6DBDF','#D6DBDF','#D6DBDF')) +
+    xlab('Ratings') + ylab('Frequency') +
+    ggtitle('Top 5 Movie Ratings on Netflix') +
+    theme_minimal() +
+    theme(
+        legend.position = "none",
+        plot.title = element_text(size = 18,face = "bold"),
+        axis.title = element_text(size = 14)
+    )
+
+bar # %>% ggplotly(width = 800, height = 500,tooltip = FALSE)
+```
+
+## Example 2 
+```{r}
+# Improve line chart to draw out insights
+rating_data <- rating_data %>% 
+              # Interested in Movies released from the year 2000 onwards 
+              filter(type == "Movie" & release_year >= 2000 & release_year < 2020) %>%
+              mutate( highlight = ifelse(rating == "TV-MA", "TV-MA", "Others"))
+
+# Get overall growth rates over a 10 and 20 year period
+min_year = min(rating_data$release_year)
+max_year = max(rating_data$release_year)
+
+# The number of movies with mature rating for the 2010, minimum and maximum years 
+rate_range <- rating_data %>% 
+              filter(release_year == min_year | release_year == max_year | release_year == '2010') %>%
+              filter(highlight == 'TV-MA')
+
+# Compute 20 year and 10 year growth rates
+growth_20 <- (rate_range$frequency[3]/rate_range$frequency[1] - 1) * 100
+
+growth_10 <- round((rate_range$frequency[3]/rate_range$frequency[2] - 1) * 100,0)
+
+
+# Revised line plot
+rating_plot_2 <- rating_data %>%
+    ggplot( aes(x = release_year, y = frequency, group = rating, color = highlight)) +
+    geom_line(size = 1.5) +
+    scale_color_manual(values = c("#D6DBDF","#f9007a")) +
+    xlab("Release year") + ylab("Number of Movies") +
+    ggtitle('Increase In Mature Content Over The Last Decade') +
+    theme_minimal() +
+    theme(legend.position = "none") +
+    geom_label( x = 2013.5, y = 300,
+                label = glue::glue("Shows for Mature Audiences \n increased {growth_10}% over the last decade"),
+                size = 4, color = "#34495E") +
+    theme(
+        legend.position = "none",
+        plot.title = element_text(size = 18,face = "bold"),
+        axis.title = element_text(size = 14)
+    )
+
+rating_plot_2 #%>% ggplotly(width = 800, height = 500)
+```
+
+
+##
+![](Thanks.png)
+Visit this [github](https://github.com/NiiAmoo/IX) repo for the code.
