@@ -4,7 +4,7 @@ author: "Nii Amoo"
 date: "`r Sys.Date()`"
 output:
   prettydoc::html_pretty:
-    theme: leonids
+    theme: architect
 
 ---
 
@@ -48,7 +48,7 @@ Sys.setenv(TZ = 'GMT')
   * Unnecessary 3D-fying 
     
 ## Our data for today - Netflix Movies & TV Shows
-```{r,message=FALSE,warning=FALSE}
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
 library(tidyverse) # meta-package for data analysis in R
 library(plotly) # creating interactive visualizations
 library(DT) # nice table formatting
@@ -70,7 +70,7 @@ skimr::skim(netflix)
 ## Some Bad Visualizations
 ### Example 1
 
-```{r}
+```{r,echo=TRUE}
 # A pie chart of ratings 
 pie_data <-  netflix %>% 
              filter(type == 'Movie') %>% 
@@ -116,7 +116,7 @@ pie
     
 
 ### Example 2
-```{r,message=FALSE}
+```{r,echo=TRUE,message=FALSE}
 # Movie Ratings over time
 rating_data <- netflix %>% 
   select(type, release_year, rating) %>%
@@ -135,7 +135,7 @@ rating_plot_1 %>% ggplotly(width = 800, height = 500)
         
 ## Examples of Good Visualizations
 ### Example 1 
-```{r}
+```{r,echo=TRUE}
 # A bar chart of ratings
 Movie_bar_data <- netflix %>% filter(type == 'Movie') %>% group_by(rating) %>%
     summarize(count = n()) %>% arrange(desc(count)) %>% slice_head(n = 5)
@@ -156,7 +156,7 @@ bar # %>% ggplotly(width = 800, height = 500,tooltip = FALSE)
 ```
 
 ## Example 2 
-```{r}
+```{r,echo=TRUE}
 # Improve line chart to draw out insights
 rating_data <- rating_data %>% 
               # Interested in Movies released from the year 2000 onwards 
@@ -202,4 +202,5 @@ rating_plot_2 #%>% ggplotly(width = 800, height = 500)
 
 ##
 ![](Thanks.png)
+
 Visit this [github](https://github.com/NiiAmoo/IX) repo for the code.
